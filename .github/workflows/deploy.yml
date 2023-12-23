@@ -58,16 +58,14 @@ jobs:
 
       - name: SSH and Deploy
         uses: appleboy/ssh-action@master
-        env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_URL }}
-          USER_NAME: ${{ github.event.inputs.user_name }}
-          PROJECT_NAME: ${{ github.event.inputs.project_name }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_PRIVATEKEY }}
           script: |
-            IMAGE_TAG="$USER_NAME-$PROJECT_NAME"
-            IMAGE_URI="$ECR_REPOSITORY:$IMAGE_TAG"
+            IMAGE_TAG="${{ github.event.inputs.user_name }}-${{ github.event.inputs.project_name }}"
+            IMAGE_URI="${{ secrets.ECR_REPOSITORY_URL }}:$IMAGE_TAG"
+            echo $IMAGE_TAG
+            echo $IMAGE_URI
             docker pull $IMAGE_URI
             docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
