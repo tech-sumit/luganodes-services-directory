@@ -63,6 +63,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATEKEY }}
           script: |
+            # Pull image and start container
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} /usr/local/bin/aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY_URL }}
             IMAGE_TAG="${{ github.event.inputs.user_name }}-${{ github.event.inputs.project_name }}"
             IMAGE_URI="${{ secrets.ECR_REPOSITORY_URL }}:$IMAGE_TAG"
@@ -72,25 +73,23 @@ jobs:
             docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
 
             # Add Nginx site configuration
-            SUBDOMAIN="${{ github.event.inputs.user_name }}"
-            DOMAIN="${{ github.event.inputs.primary_domain }}"
-            sudo bash -c "cat > /etc/nginx/sites-available/$SUBDOMAIN.$DOMAIN <<EOF
+            sudo bash -c "cat > /etc/nginx/sites-available/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }} <<EOF
             server {
                 listen 80;
                 listen [::]:80;
-                server_name www.$SUBDOMAIN.$DOMAIN $SUBDOMAIN.$DOMAIN;
-                access_log /var/log/nginx/$SUBDOMAIN.$DOMAIN/access.log;
-                error_log /var/log/nginx/$SUBDOMAIN.$DOMAIN/error.log;
+                server_name www.$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }} $IMAGE_TAG.${{ secrets.SERVER_DOMAIN }};
+                access_log /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/access.log;
+                error_log /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/error.log;
                 location / {
                     proxy_pass http://0.0.0.0:${{ github.event.inputs.host_port }};
                 }
             }
             EOF"
-            sudo ln -s /etc/nginx/sites-available/$SUBDOMAIN.$DOMAIN /etc/nginx/sites-enabled/
-            sudo mkdir -p /var/log/nginx/$SUBDOMAIN.$DOMAIN
-            sudo touch /var/log/nginx/$SUBDOMAIN.$DOMAIN/access.log
-            sudo touch /var/log/nginx/$SUBDOMAIN.$DOMAIN/error.log
-            echo "127.0.0.1 $SUBDOMAIN.$DOMAIN" | sudo tee -a /etc/hosts
+            sudo ln -s /etc/nginx/sites-available/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }} /etc/nginx/sites-enabled/
+            sudo mkdir -p /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}
+            sudo touch /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/access.log
+            sudo touch /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/error.log
+            echo "127.0.0.1 $IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}" | sudo tee -a /etc/hosts
             sudo systemctl restart nginx
             # Check if NGINX is active
               if ! systemctl is-active --quiet nginx; then
