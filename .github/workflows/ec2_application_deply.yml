@@ -1,4 +1,4 @@
-name: Deploy Application
+name: Deploy App on EC2
 
 on:
   workflow_dispatch:
@@ -91,12 +91,11 @@ jobs:
             sudo mkdir -p /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}
             sudo touch /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/access.log
             sudo touch /var/log/nginx/$IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}/error.log
-            echo "127.0.0.1 $IMAGE_TAG.${{ secrets.SERVER_DOMAIN }}" | sudo tee -a /etc/hosts
             sudo systemctl restart nginx
             # Check if NGINX is active
-              if ! systemctl is-active --quiet nginx; then
-            echo "Error: NGINX is not active."
+            if ! systemctl is-active --quiet nginx; then
+              echo "Error: NGINX is not active."
               exit 1
-              else
-            echo "Success: NGINX is active and running."
+            else
+              echo "Success: NGINX is active and running."
               fi
