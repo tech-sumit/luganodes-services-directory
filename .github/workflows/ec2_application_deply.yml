@@ -52,6 +52,7 @@ jobs:
             printf "FROM node:slim\nRUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*\nWORKDIR /code\nCOPY . /code\nRUN npm install --force\nENTRYPOINT $ENTRYPOINT_ARRAY\n" > Dockerfile || { echo "Dockerfile creation failed"; exit 1; }
           fi
           IMAGE_TAG="$USER_NAME-$PROJECT_NAME"
+          IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]@._' '[:lower:]-')
           IMAGE_URI="$ECR_REPOSITORY:$IMAGE_TAG"
           docker build -t $IMAGE_URI . || { echo "Docker build failed"; exit 1; }
           docker push $IMAGE_URI || { echo "Docker push failed"; exit 1; }
@@ -65,12 +66,9 @@ jobs:
           script: |
             # Pull image and start container
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} /usr/local/bin/aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY_URL }}
-            USER_NAME_SANITIZED=$(echo "${{ github.event.inputs.user_name }}" | tr '[:upper:]@._' '[:lower:]-')
-            PROJECT_NAME_SANITIZED=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]@._' '[:lower:]-')
-            IMAGE_TAG="$USER_NAME_SANITIZED-$PROJECT_NAME_SANITIZED"
+            IMAGE_TAG="${{ github.event.inputs.user_name }}-${{ github.event.inputs.project_name }}"
+            IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]@._' '[:lower:]-')
             IMAGE_URI="${{ secrets.ECR_REPOSITORY_URL }}:$IMAGE_TAG"
-            echo $IMAGE_TAG
-            echo $IMAGE_URI
             docker pull $IMAGE_URI
             docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
 

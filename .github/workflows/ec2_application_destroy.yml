@@ -22,9 +22,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATEKEY }}
           script: |
             # Docker container cleanup
-            USER_NAME_SANITIZED=$(echo "${{ github.event.inputs.user_name }}" | tr '[:upper:]@._' '[:lower:]-')
-            PROJECT_NAME_SANITIZED=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]@._' '[:lower:]-')
-            IMAGE_TAG="$USER_NAME_SANITIZED-$PROJECT_NAME_SANITIZED"
+            IMAGE_TAG="${{ github.event.inputs.user_name }}-${{ github.event.inputs.project_name }}"
+            IMAGE_TAG=$(echo "$IMAGE_TAG" | tr '[:upper:]@._' '[:lower:]-')
             IMAGE_URI="${{ secrets.ECR_REPOSITORY_URL }}:$IMAGE_TAG"
             docker rm -f $IMAGE_TAG
             docker rmi $IMAGE_URI
