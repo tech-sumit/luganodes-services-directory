@@ -12,8 +12,8 @@ on:
       user_name:
         description: 'User Name'
         required: true
-      random_host_port:
-        description: 'Random Host Port'
+      host_port:
+        description: 'Host Port'
         required: true
       container_port:
         description: 'Container Port'
@@ -70,4 +70,4 @@ jobs:
             IMAGE_TAG="$USER_NAME-$PROJECT_NAME"
             IMAGE_URI="$ECR_REPOSITORY:$IMAGE_TAG"
             docker pull $IMAGE_URI
-            docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.random_host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
+            docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
