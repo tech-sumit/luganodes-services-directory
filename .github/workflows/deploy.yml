@@ -70,3 +70,32 @@ jobs:
             echo $IMAGE_URI
             docker pull $IMAGE_URI
             docker run -d --name $IMAGE_TAG -p ${{ github.event.inputs.host_port }}:${{ github.event.inputs.container_port }} $IMAGE_URI
+
+            # Add Nginx site configuration
+            SUBDOMAIN="${{ github.event.inputs.user_name }}"
+            DOMAIN="${{ github.event.inputs.primary_domain }}"
+            sudo bash -c "cat > /etc/nginx/sites-available/$SUBDOMAIN.$DOMAIN <<EOF
+            server {
+                listen 80;
+                listen [::]:80;
+                server_name www.$SUBDOMAIN.$DOMAIN $SUBDOMAIN.$DOMAIN;
+                access_log /var/log/nginx/$SUBDOMAIN.$DOMAIN/access.log;
+                error_log /var/log/nginx/$SUBDOMAIN.$DOMAIN/error.log;
+                location / {
+                    proxy_pass http://0.0.0.0:${{ github.event.inputs.host_port }};
+                }
+            }
+            EOF"
+            sudo ln -s /etc/nginx/sites-available/$SUBDOMAIN.$DOMAIN /etc/nginx/sites-enabled/
+            sudo mkdir -p /var/log/nginx/$SUBDOMAIN.$DOMAIN
+            sudo touch /var/log/nginx/$SUBDOMAIN.$DOMAIN/access.log
+            sudo touch /var/log/nginx/$SUBDOMAIN.$DOMAIN/error.log
+            echo "127.0.0.1 $SUBDOMAIN.$DOMAIN" | sudo tee -a /etc/hosts
+            sudo systemctl restart nginx
+            # Check if NGINX is active
+              if ! systemctl is-active --quiet nginx; then
+            echo "Error: NGINX is not active."
+              exit 1
+              else
+            echo "Success: NGINX is active and running."
+              fi
