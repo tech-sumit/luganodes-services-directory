@@ -65,7 +65,9 @@ jobs:
           script: |
             # Pull image and start container
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} /usr/local/bin/aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY_URL }}
-            IMAGE_TAG="${{ github.event.inputs.user_name }}-${{ github.event.inputs.project_name }}"
+            USER_NAME_SANITIZED=$(echo "${{ github.event.inputs.user_name }}" | tr '[:upper:]@._' '[:lower:]-')
+            PROJECT_NAME_SANITIZED=$(echo "${{ github.event.inputs.project_name }}" | tr '[:upper:]@._' '[:lower:]-')
+            IMAGE_TAG="$USER_NAME_SANITIZED-$PROJECT_NAME_SANITIZED"
             IMAGE_URI="${{ secrets.ECR_REPOSITORY_URL }}:$IMAGE_TAG"
             echo $IMAGE_TAG
             echo $IMAGE_URI
